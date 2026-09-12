@@ -1,10 +1,12 @@
-import { Bot, Check, Circle, GitBranch, GitPullRequest, X, XCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Bot, Check, Circle, GitBranch, GitPullRequest, Send, X, XCircle } from 'lucide-react'
 import type { Ticket } from '../types'
 
 interface TicketPanelProps {
   ticket: Ticket
   onClose: () => void
-  onToggleCriterion: (ticketId: string, criterionId: string) => void
+  onToggleCriterion: (ticketId: string, criterionId: string) => void | Promise<void>
+  onAddComment: (ticketId: string, body: string) => void | Promise<void>
 }
 
 const stageIcon = (status: string) => {
@@ -14,7 +16,11 @@ const stageIcon = (status: string) => {
   return <Circle size={11} />
 }
 
-export function TicketPanel({ ticket, onClose, onToggleCriterion }: TicketPanelProps) {
+export function TicketPanel({ ticket, onClose, onToggleCriterion, onAddComment }: TicketPanelProps) {
+  const [comment, setComment] = useState('')
+  const [submittingComment, setSubmittingComment] = useState(false)
+  const comments = ticket.comments ?? []
+
   return (
     <div className="panel-backdrop" onMouseDown={onClose}>
       <aside className="ticket-panel" onMouseDown={(event) => event.stopPropagation()}>
@@ -44,7 +50,7 @@ export function TicketPanel({ ticket, onClose, onToggleCriterion }: TicketPanelP
               {ticket.criteria.length === 0 && <div className="muted">No acceptance criteria yet.</div>}
               {ticket.criteria.map((criterion) => (
                 <label className="criterion-row" key={criterion.id}>
-                  <input type="checkbox" checked={criterion.done} onChange={() => onToggleCriterion(ticket.id, criterion.id)} />
+                  <input type="checkbox" checked={criterion.done} onChange={() => void onToggleCriterion(ticket.id, criterion.id)} />
                   <span>{criterion.text}</span>
                 </label>
               ))}
@@ -61,10 +67,38 @@ export function TicketPanel({ ticket, onClose, onToggleCriterion }: TicketPanelP
                     <strong>{stage.role}</strong>
                     <span>{stage.status}</span>
                     {stage.note && <p>{stage.note}</p>}
+                    {stage.report && <details className="stage-report"><summary>Report</summary><p>{stage.report}</p></details>}
                   </div>
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="panel-section">
+            <div className="section-heading">Comments <span>{comments.length}</span></div>
+            <div className="comment-list">
+              {comments.length === 0 && <div className="muted">No comments yet.</div>}
+              {comments.map((item) => (
+                <div className={`comment-item comment-${item.authorType}`} key={item.id}>
+                  <div className="comment-meta"><strong>{item.author}</strong><span>{new Date(item.createdAt).toLocaleString()}</span></div>
+                  <p>{item.body}</p>
+                </div>
+              ))}
+            </div>
+            <form
+              className="comment-form"
+              onSubmit={async (event) => {
+                event.preventDefault()
+                if (!comment.trim()) return
+                setSubmittingComment(true)
+                await onAddComment(ticket.id, comment.trim())
+                setComment('')
+                setSubmittingComment(false)
+              }}
+            >
+              <textarea placeholder="Add a comment or handoff note…" value={comment} onChange={(event) => setComment(event.target.value)} />
+              <button className="secondary-button" type="submit" disabled={submittingComment || !comment.trim()}><Send size={13} /> {submittingComment ? 'Sending…' : 'Comment'}</button>
+            </form>
           </section>
 
           <section className="panel-section">
