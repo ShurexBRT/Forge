@@ -1,13 +1,17 @@
-import { Bot, Boxes, Settings2 } from 'lucide-react'
-import type { Project } from '../types'
+import { Bot, Boxes, Cloud, HardDrive, LogOut, Plus, Settings2 } from 'lucide-react'
+import type { ForgeMode, Project } from '../types'
 
 interface SidebarProps {
   projects: Project[]
   activeProjectId: string
+  mode: ForgeMode
+  userLabel?: string
   onProjectChange: (id: string) => void
+  onCreateProject: () => void
+  onSignOut?: () => void
 }
 
-export function Sidebar({ projects, activeProjectId, onProjectChange }: SidebarProps) {
+export function Sidebar({ projects, activeProjectId, mode, userLabel, onProjectChange, onCreateProject, onSignOut }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -27,7 +31,10 @@ export function Sidebar({ projects, activeProjectId, onProjectChange }: SidebarP
         </button>
       </nav>
 
-      <div className="sidebar-section-title">Projects</div>
+      <div className="sidebar-section-title sidebar-section-row">
+        <span>Projects</span>
+        <button type="button" onClick={onCreateProject} aria-label="Create project"><Plus size={13} /></button>
+      </div>
       <div className="project-list">
         {projects.map((project) => (
           <button
@@ -43,10 +50,15 @@ export function Sidebar({ projects, activeProjectId, onProjectChange }: SidebarP
       </div>
 
       <div className="sidebar-footer">
+        <div className="connection-state">
+          {mode === 'cloud' ? <Cloud size={13} /> : <HardDrive size={13} />}
+          <div><strong>{mode === 'cloud' ? 'Cloud' : 'Demo'}</strong><span>{mode === 'cloud' ? userLabel : 'Local browser data'}</span></div>
+        </div>
         <button className="nav-item" type="button">
           <Settings2 size={16} /> Settings
         </button>
-        <div className="version">Forge v0.1.0</div>
+        {mode === 'cloud' && onSignOut && <button className="nav-item" type="button" onClick={onSignOut}><LogOut size={16} /> Sign out</button>}
+        <div className="version">Forge v0.2.0</div>
       </div>
     </aside>
   )
