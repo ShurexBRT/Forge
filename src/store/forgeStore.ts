@@ -10,7 +10,7 @@ import {
   updateCriterion,
   updateTicketStatus,
 } from '../services/forgeRepository'
-import type { CreateProjectInput, Project, Ticket, TicketStatus } from '../types'
+import type { CreateProjectInput, ForgeMode, Project, Ticket, TicketStatus } from '../types'
 
 const STORAGE_KEY = 'forge:tickets:v1'
 
@@ -25,7 +25,7 @@ function loadDemoTickets(): Ticket[] {
 }
 
 export function useForgeStore(user: User | null) {
-  const mode = isSupabaseConfigured ? 'cloud' : 'demo'
+  const mode: ForgeMode = isSupabaseConfigured ? 'cloud' : 'demo'
   const [projects, setProjects] = useState<Project[]>(() => (mode === 'demo' ? seedProjects : []))
   const [tickets, setTickets] = useState<Ticket[]>(() => (mode === 'demo' ? loadDemoTickets() : []))
   const [activeProjectId, setActiveProjectId] = useState<string>(() => (mode === 'demo' ? 'forge' : ''))
