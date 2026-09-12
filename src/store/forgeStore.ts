@@ -1,42 +1,92 @@
-import { useEffect, useMemo, useState } from 'react'
-import { projects, seedTickets } from '../data/seed'
-import type { Project, Ticket, TicketStatus } from '../types'
+import type { User } from '@supabase/supabase-js'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { projects as seedProjects, seedTickets } from '../data/seed'
+import { isSupabaseConfigured } from '../lib/supabase'
+import {
+  addTicketComment,
+  createProject as createCloudProject,
+  createTicket as createCloudTicket,
+  fetchForgeData,
+  updateCriterion,
+  updateTicketStatus,
+} from '../services/forgeRepository'
+import type { CreateProjectInput, Project, Ticket, TicketStatus } from '../types'
 
 const STORAGE_KEY = 'forge:tickets:v1'
 
-function loadTickets(): Ticket[] {
+function loadDemoTickets(): Ticket[] {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
-    return saved ? (JSON.parse(saved) as Ticket[]) : seedTickets
+    const tickets = saved ? (JSON.parse(saved) as Ticket[]) : seedTickets
+    return tickets.map((ticket) => ({ ...ticket, comments: ticket.comments ?? [] }))
   } catch {
-    return seedTickets
+    return seedTickets.map((ticket) => ({ ...ticket, comments: ticket.comments ?? [] }))
   }
 }
 
-export function useForgeStore() {
-  const [tickets, setTickets] = useState<Ticket[]>(loadTickets)
-  const [activeProjectId, setActiveProjectId] = useState<string>('forge')
+export function useForgeStore(user: User | null) {
+  const mode = isSupabaseConfigured ? 'cloud' : 'demo'
+  const [projects, setProjects] = useState<Project[]>(() => (mode === 'demo' ? seedProjects : []))
+  const [tickets, setTickets] = useState<Ticket[]>(() => (mode === 'demo' ? loadDemoTickets() : []))
+  const [activeProjectId, setActiveProjectId] = useState<string>(() => (mode === 'demo' ? 'forge' : ''))
+  const [loading, setLoading] = useState(mode === 'cloud')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets))
-  }, [tickets])
+    if (mode === 'demo') localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets))
+  }, [mode, tickets])
 
-  const activeProject = useMemo<Project>(
+  const refresh = useCallback(async () => {
+    if (mode !== 'cloud' || !user) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchForgeData()
+      setProjects(data.projects)
+      setTickets(data.tickets)
+      setActiveProjectId((current) => {
+        if (current && data.projects.some((project) => project.id === current)) return current
+        return data.projects[0]?.id ?? ''
+      })
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not load Forge data.')
+    } finally {
+      setLoading(false)
+    }
+  }, [mode, user])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  const activeProject = useMemo<Project | undefined>(
     () => projects.find((project) => project.id === activeProjectId) ?? projects[0],
-    [activeProjectId],
+    [activeProjectId, projects],
   )
 
   const visibleTickets = useMemo(
-    () => tickets.filter((ticket) => ticket.projectId === activeProject.id),
-    [tickets, activeProject.id],
+    () => (activeProject ? tickets.filter((ticket) => ticket.projectId === activeProject.id) : []),
+    [tickets, activeProject],
   )
 
-  function updateTicket(ticketId: string, updater: (ticket: Ticket) => Ticket) {
+  function updateDemoTicket(ticketId: string, updater: (ticket: Ticket) => Ticket) {
     setTickets((current) => current.map((ticket) => (ticket.id === ticketId ? updater(ticket) : ticket)))
   }
 
-  function moveTicket(ticketId: string, status: TicketStatus) {
-    updateTicket(ticketId, (ticket) => ({
+  async function moveTicket(ticketId: string, status: TicketStatus) {
+    if (mode === 'cloud') {
+      try {
+        setError(null)
+        await updateTicketStatus(ticketId, status)
+        await refresh()
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Could not move ticket.')
+      }
+      return
+    }
+
+    updateDemoTicket(ticketId, (ticket) => ({
       ...ticket,
       status,
       activity: [
@@ -51,16 +101,45 @@ export function useForgeStore() {
     }))
   }
 
-  function toggleCriterion(ticketId: string, criterionId: string) {
-    updateTicket(ticketId, (ticket) => ({
-      ...ticket,
-      criteria: ticket.criteria.map((criterion) =>
-        criterion.id === criterionId ? { ...criterion, done: !criterion.done } : criterion,
+  async function toggleCriterion(ticketId: string, criterionId: string) {
+    const ticket = tickets.find((item) => item.id === ticketId)
+    const criterion = ticket?.criteria.find((item) => item.id === criterionId)
+    if (!criterion) return
+
+    if (mode === 'cloud') {
+      try {
+        setError(null)
+        await updateCriterion(ticketId, criterionId, !criterion.done)
+        await refresh()
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Could not update acceptance criterion.')
+      }
+      return
+    }
+
+    updateDemoTicket(ticketId, (current) => ({
+      ...current,
+      criteria: current.criteria.map((item) =>
+        item.id === criterionId ? { ...item, done: !item.done } : item,
       ),
     }))
   }
 
-  function addTicket(input: Pick<Ticket, 'title' | 'description' | 'type' | 'priority'>) {
+  async function addTicket(input: Pick<Ticket, 'title' | 'description' | 'type' | 'priority'>) {
+    if (!activeProject) return
+
+    if (mode === 'cloud') {
+      if (!user) return
+      try {
+        setError(null)
+        await createCloudTicket(activeProject, input, user)
+        await refresh()
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Could not create ticket.')
+      }
+      return
+    }
+
     const projectTickets = tickets.filter((ticket) => ticket.projectId === activeProject.id)
     const numbers = projectTickets
       .map((ticket) => Number(ticket.key.split('-')[1]))
@@ -73,6 +152,7 @@ export function useForgeStore() {
       projectId: activeProject.id,
       status: 'Backlog',
       criteria: [],
+      comments: [],
       stages: [
         { role: 'Planner', status: 'pending' },
         { role: 'Builder', status: 'pending' },
@@ -87,10 +167,70 @@ export function useForgeStore() {
     }
 
     setTickets((current) => [ticket, ...current])
-    return ticket
+  }
+
+  async function createProject(input: CreateProjectInput) {
+    if (mode === 'cloud') {
+      if (!user) return
+      try {
+        setError(null)
+        const project = await createCloudProject(input, user)
+        await refresh()
+        setActiveProjectId(project.id)
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Could not create project.')
+      }
+      return
+    }
+
+    const project: Project = {
+      id: crypto.randomUUID(),
+      key: input.key.trim().toUpperCase(),
+      name: input.name.trim(),
+      description: input.description.trim(),
+      githubRepo: input.githubRepo?.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    }
+    setProjects((current) => [...current, project])
+    setActiveProjectId(project.id)
+  }
+
+  async function addComment(ticketId: string, body: string) {
+    const trimmed = body.trim()
+    if (!trimmed) return
+
+    if (mode === 'cloud') {
+      if (!user) return
+      try {
+        setError(null)
+        await addTicketComment(ticketId, trimmed, user)
+        await refresh()
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Could not add comment.')
+      }
+      return
+    }
+
+    updateDemoTicket(ticketId, (ticket) => ({
+      ...ticket,
+      comments: [
+        ...(ticket.comments ?? []),
+        {
+          id: crypto.randomUUID(),
+          author: 'Human',
+          authorType: 'human',
+          body: trimmed,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    }))
   }
 
   return {
+    mode,
+    loading,
+    error,
+    clearError: () => setError(null),
     projects,
     tickets,
     visibleTickets,
@@ -100,5 +240,8 @@ export function useForgeStore() {
     moveTicket,
     toggleCriterion,
     addTicket,
+    createProject,
+    addComment,
+    refresh,
   }
 }
