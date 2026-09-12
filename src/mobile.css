@@ -1,0 +1,301 @@
+@media (max-width: 760px) {
+  body { overflow-x: hidden; }
+
+  .app-shell {
+    display: block;
+    min-height: 100dvh;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    width: 100%;
+    height: 58px;
+    padding: 7px 9px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13, 16, 20, .96);
+    backdrop-filter: blur(14px);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand {
+    flex: 0 0 auto;
+    padding: 0;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .brand > div:last-child,
+  .workspace-nav,
+  .sidebar-section-title,
+  .sidebar-footer {
+    display: none;
+  }
+
+  .project-list {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    padding: 2px 1px;
+  }
+
+  .project-list::-webkit-scrollbar { display: none; }
+
+  .project-item {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 36px;
+    padding: 6px 9px 6px 6px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    gap: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .project-item.selected {
+    border-color: #303744;
+    background: #171b22;
+  }
+
+  .project-key {
+    width: auto;
+    min-width: 30px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 9px;
+  }
+
+  .project-item span:last-child { display: inline; }
+
+  .main-area {
+    min-height: calc(100dvh - 58px);
+  }
+
+  .topbar {
+    position: sticky;
+    top: 58px;
+    z-index: 20;
+    min-height: 70px;
+    padding: 12px 12px 11px;
+    gap: 10px;
+    background: rgba(11, 13, 16, .96);
+    backdrop-filter: blur(12px);
+  }
+
+  .topbar h1 {
+    font-size: 16px;
+    line-height: 1.2;
+    max-width: 54vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar p,
+  .search-button {
+    display: none;
+  }
+
+  .topbar-actions { margin-left: auto; }
+
+  .primary-button,
+  .secondary-button {
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 9px;
+  }
+
+  .kanban-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .kanban-scroll::-webkit-scrollbar { display: none; }
+
+  .kanban-board {
+    min-width: 0;
+    min-height: calc(100dvh - 128px);
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px 18px;
+    background: var(--bg);
+  }
+
+  .kanban-column {
+    flex: 0 0 calc(100vw - 24px);
+    width: calc(100vw - 24px);
+    min-width: 0;
+    padding: 0 8px 22px;
+    border: 1px solid #1d232c;
+    border-radius: 11px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    background: #0d1014;
+  }
+
+  .column-header {
+    min-height: 46px;
+    border-radius: 10px 10px 0 0;
+    padding: 0 4px;
+  }
+
+  .ticket-card {
+    min-height: 92px;
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .ticket-card h3 {
+    margin: 9px 0 16px;
+    font-size: 13px;
+  }
+
+  .quick-move {
+    min-height: 36px;
+    margin-top: 5px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    opacity: .62;
+    font-size: 10px;
+  }
+
+  .quick-move:focus {
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  .panel-backdrop {
+    align-items: stretch;
+    background: var(--bg);
+    backdrop-filter: none;
+  }
+
+  .ticket-panel {
+    width: 100vw;
+    max-width: none;
+    min-height: 100dvh;
+    border-left: 0;
+    box-shadow: none;
+  }
+
+  .panel-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    height: 54px;
+    padding: 0 14px;
+    background: rgba(15, 18, 23, .97);
+    backdrop-filter: blur(12px);
+  }
+
+  .panel-toolbar button {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+  }
+
+  .panel-content { padding: 18px 14px 32px; }
+
+  .panel-content h2 {
+    font-size: 20px;
+  }
+
+  .agent-pipeline {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .agent-stage {
+    min-height: 76px;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    background: rgba(0,0,0,.58);
+  }
+
+  .create-modal {
+    width: 100%;
+    max-height: 92dvh;
+    overflow-y: auto;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .title-input {
+    font-size: 16px;
+  }
+
+  .create-modal textarea {
+    min-height: 116px;
+  }
+
+  .modal-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    background: #10141a;
+  }
+
+  .comment-form textarea {
+    min-height: 96px;
+    font-size: 16px;
+  }
+
+  .auth-shell {
+    min-height: 100dvh;
+    padding: 16px;
+    align-items: center;
+  }
+
+  .auth-card {
+    padding: 22px 18px;
+    border-radius: 14px;
+  }
+
+  .auth-card input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .error-banner {
+    position: sticky;
+    top: 58px;
+    z-index: 26;
+    padding: 9px 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .project-item span:last-child { display: none; }
+  .project-item { padding-right: 6px; }
+  .topbar h1 { max-width: 48vw; }
+  .primary-button { padding-inline: 10px; }
+  .agent-pipeline { grid-template-columns: 1fr; }
+  .panel-badges { flex-wrap: wrap; }
+}
