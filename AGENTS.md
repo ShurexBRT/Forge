@@ -2,6 +2,8 @@
 
 Forge is an AI-agent-first engineering ticket desk. Agents must treat the ticket as the source of work truth and the repository as the source of code truth.
 
+Before reading or writing Forge workflow data, also read `docs/AGENT-DATA-CONTRACT.md`. That document defines table semantics, role-owned transitions, agent-run evidence, comment/activity rules, and the security boundary.
+
 ## Global rules
 
 1. Read the complete ticket before acting.
@@ -14,6 +16,7 @@ Forge is an AI-agent-first engineering ticket desk. Agents must treat the ticket
 8. Prefer the smallest safe change that addresses the root cause.
 9. Preserve existing architecture unless the Planner explicitly approves a change.
 10. If a destructive operation is required, stop and mark the ticket BLOCKED until a human approves it.
+11. Never expose Supabase service-role/secret credentials in frontend code, `VITE_*` variables, tickets, comments, reports, logs, or repository files.
 
 ## Roles
 
