@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "projectKey": "FOR",
+  "name": "Forge",
+  "repository": "ShurexBRT/Forge",
+  "defaultBranch": "main",
+  "forgeUrl": "https://shurexbrt.github.io/Forge/",
+  "ticketRequired": true,
+  "roles": ["Planner", "Builder", "Reviewer", "QA", "Browser", "Release"],
+  "workflow": ["Backlog", "Ready", "In Progress", "Review", "QA", "Ready to Release", "Done"],
+  "branchPattern": "agent/{role}/{ticket}-{slug}",
+  "notes": "Forge is the control plane itself. Changes to ticket state rules or agent contracts require review and regression coverage."
+}
