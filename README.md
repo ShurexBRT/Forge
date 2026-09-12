@@ -67,4 +67,4 @@ GitHub Pages reads browser-safe Supabase values from repository variables named 
 
 ## Workflow philosophy
 
-A Builder cannot approve its own work. A QA pass requires evidence. A passing build does not equal a verified user flow. Tickets carry the workflow state; GitHub carries the code state; agent runs carry execution evidence.
+A Builder cannot approve its own work. A QA pass requires evidence. A passing build does not equal a verified user flow. Tickets carry the workflow state; GitHub carries the code state; agent runs carry execution evidence..
