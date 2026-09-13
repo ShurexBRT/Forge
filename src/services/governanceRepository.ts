@@ -1,5 +1,12 @@
 import { supabase } from '../lib/supabase'
-import type { AgentDefinition, DecisionRequest, ProjectAgent, ProjectDirection } from '../types'
+import type {
+  AgentCredentialSummary,
+  AgentDefinition,
+  DecisionRequest,
+  IssuedAgentCredential,
+  ProjectAgent,
+  ProjectDirection,
+} from '../types'
 
 function requireSupabase() {
   if (!supabase) throw new Error('Forge Cloud is not configured.')
@@ -112,4 +119,45 @@ export async function resolveDecisionRequest(input: {
     })
     .eq('id', input.id)
   if (error) throw error
+}
+
+function mapCredential(row: any): AgentCredentialSummary {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    agentId: row.agent_id,
+    label: row.label,
+    tokenPrefix: row.token_prefix,
+    active: row.active,
+    lastUsedAt: row.last_used_at,
+    createdAt: row.created_at,
+    revokedAt: row.revoked_at,
+  }
+}
+
+export async function listAgentCredentials(projectId: string): Promise<AgentCredentialSummary[]> {
+  const client = requireSupabase()
+  const { data, error } = await client.functions.invoke('agent-admin', { body: { action: 'list' } })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return (data?.credentials ?? []).filter((row: any) => row.project_id === projectId).map(mapCredential)
+}
+
+export async function issueAgentCredential(projectId: string, agentId: string, label = 'default'): Promise<IssuedAgentCredential> {
+  const client = requireSupabase()
+  const { data, error } = await client.functions.invoke('agent-admin', {
+    body: { action: 'issue', project_id: projectId, agent_id: agentId, label },
+  })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return { ...mapCredential(data.credential), token: data.token }
+}
+
+export async function revokeAgentCredential(credentialId: string) {
+  const client = requireSupabase()
+  const { data, error } = await client.functions.invoke('agent-admin', {
+    body: { action: 'revoke', credential_id: credentialId },
+  })
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
 }
