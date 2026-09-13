@@ -68,6 +68,13 @@ export function Sidebar({
         ))}
       </div>
 
+      {isAdmin && (onCreateProject || onOpenAdmin) && (
+        <div className="mobile-sidebar-actions">
+          {onCreateProject && <button type="button" onClick={onCreateProject} aria-label="Create project"><Plus size={17} /></button>}
+          {onOpenAdmin && <button type="button" onClick={onOpenAdmin} aria-label="Open admin"><ShieldCheck size={17} /></button>}
+        </div>
+      )}
+
       <div className="sidebar-footer">
         <div className="connection-state">
           {mode === 'cloud' ? <Cloud size={13} /> : <HardDrive size={13} />}
