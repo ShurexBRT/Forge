@@ -14,6 +14,8 @@ export type StageStatus = 'pending' | 'active' | 'passed' | 'failed'
 export type ForgeMode = 'demo' | 'cloud'
 export type UserRole = 'admin' | 'member'
 export type ProjectAccessRole = 'member' | 'manager'
+export type DirectionStatus = 'defined' | 'needs_alignment' | 'blocked_on_owner'
+export type DecisionStatus = 'open' | 'resolved' | 'dismissed'
 
 export interface AcceptanceCriterion {
   id: string
@@ -91,4 +93,50 @@ export interface ProjectMembership {
   userId: string
   accessRole: ProjectAccessRole
   assignedAt: string
+}
+
+export interface AgentDefinition {
+  id: string
+  slug: string
+  name: string
+  role: AgentRole
+  description: string
+  status: 'active' | 'disabled'
+  system_prompt_version: string
+  default_permissions: Record<string, unknown>
+}
+
+export interface ProjectAgent {
+  projectId: string
+  agentId: string
+  enabled: boolean
+  specialization: string
+  permissions: Record<string, unknown>
+  agent: AgentDefinition
+}
+
+export interface ProjectDirection {
+  projectId: string
+  status: DirectionStatus
+  productBrief: string
+  pmNotes: string
+  lastAlignedAt: string | null
+  updatedAt: string
+}
+
+export interface DecisionRequest {
+  id: string
+  projectId: string
+  ticketId: string | null
+  requestedByAgentId: string | null
+  title: string
+  context: string
+  question: string
+  options: unknown[]
+  status: DecisionStatus
+  pmSummary: string
+  ownerDecision: string
+  createdAt: string
+  resolvedAt: string | null
+  updatedAt: string
 }
