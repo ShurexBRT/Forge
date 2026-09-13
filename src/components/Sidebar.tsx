@@ -9,6 +9,7 @@ interface SidebarProps {
   isAdmin?: boolean
   onProjectChange: (id: string) => void
   onCreateProject?: () => void
+  onOpenAgents?: () => void
   onOpenAdmin?: () => void
   onSignOut?: () => void
 }
@@ -21,6 +22,7 @@ export function Sidebar({
   isAdmin = false,
   onProjectChange,
   onCreateProject,
+  onOpenAgents,
   onOpenAdmin,
   onSignOut,
 }: SidebarProps) {
@@ -38,8 +40,8 @@ export function Sidebar({
         <button className="nav-item active" type="button">
           <Boxes size={16} /> Projects
         </button>
-        <button className="nav-item" type="button">
-          <Bot size={16} /> Agents <span className="soon">soon</span>
+        <button className="nav-item" type="button" onClick={onOpenAgents} disabled={!onOpenAgents}>
+          <Bot size={16} /> Agents
         </button>
         {isAdmin && onOpenAdmin && (
           <button className="nav-item" type="button" onClick={onOpenAdmin}>
@@ -68,10 +70,11 @@ export function Sidebar({
         ))}
       </div>
 
-      {isAdmin && (onCreateProject || onOpenAdmin) && (
+      {(onOpenAgents || (isAdmin && (onCreateProject || onOpenAdmin))) && (
         <div className="mobile-sidebar-actions">
-          {onCreateProject && <button type="button" onClick={onCreateProject} aria-label="Create project"><Plus size={17} /></button>}
-          {onOpenAdmin && <button type="button" onClick={onOpenAdmin} aria-label="Open admin"><ShieldCheck size={17} /></button>}
+          {onOpenAgents && <button type="button" onClick={onOpenAgents} aria-label="Open agents"><Bot size={17} /></button>}
+          {isAdmin && onCreateProject && <button type="button" onClick={onCreateProject} aria-label="Create project"><Plus size={17} /></button>}
+          {isAdmin && onOpenAdmin && <button type="button" onClick={onOpenAdmin} aria-label="Open admin"><ShieldCheck size={17} /></button>}
         </div>
       )}
 
@@ -87,7 +90,7 @@ export function Sidebar({
           <Settings2 size={16} /> Settings
         </button>
         {mode === 'cloud' && onSignOut && <button className="nav-item" type="button" onClick={onSignOut}><LogOut size={16} /> Sign out</button>}
-        <div className="version">Forge v0.3.0</div>
+        <div className="version">Forge v0.4.0</div>
       </div>
     </aside>
   )
