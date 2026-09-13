@@ -4,7 +4,9 @@ import './styles.css'
 import './v02.css'
 import './mobile.css'
 import './admin.css'
+import './governance.css'
 import { AdminPanel } from './components/AdminPanel'
+import { AgentsPanel } from './components/AgentsPanel'
 import { AuthGate } from './components/AuthGate'
 import { CreateProjectModal } from './components/CreateProjectModal'
 import { CreateTicketModal } from './components/CreateTicketModal'
@@ -27,6 +29,7 @@ function ForgeWorkspace({ user, signOut }: ForgeWorkspaceProps) {
   const [creatingTicket, setCreatingTicket] = useState(false)
   const [creatingProject, setCreatingProject] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [agentsOpen, setAgentsOpen] = useState(false)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
 
@@ -60,6 +63,10 @@ function ForgeWorkspace({ user, signOut }: ForgeWorkspaceProps) {
     if (!fresh) setSelectedTicket(null)
   }, [store.tickets, selectedTicket])
 
+  useEffect(() => {
+    setAgentsOpen(false)
+  }, [store.activeProjectId])
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -73,6 +80,7 @@ function ForgeWorkspace({ user, signOut }: ForgeWorkspaceProps) {
           setSelectedTicket(null)
         }}
         onCreateProject={isAdmin ? () => setCreatingProject(true) : undefined}
+        onOpenAgents={store.activeProject ? () => setAgentsOpen(true) : undefined}
         onOpenAdmin={store.mode === 'cloud' && isAdmin ? () => setAdminOpen(true) : undefined}
         onSignOut={store.mode === 'cloud' ? () => void signOut() : undefined}
       />
@@ -117,6 +125,7 @@ function ForgeWorkspace({ user, signOut }: ForgeWorkspaceProps) {
       {creatingTicket && <CreateTicketModal onClose={() => setCreatingTicket(false)} onCreate={store.addTicket} />}
       {creatingProject && isAdmin && <CreateProjectModal onClose={() => setCreatingProject(false)} onCreate={store.createProject} />}
       {adminOpen && user && isAdmin && <AdminPanel currentUser={user} projects={store.projects} onClose={() => setAdminOpen(false)} />}
+      {agentsOpen && store.activeProject && <AgentsPanel project={store.activeProject} isAdmin={isAdmin} onClose={() => setAgentsOpen(false)} />}
     </div>
   )
 }
