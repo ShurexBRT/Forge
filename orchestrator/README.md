@@ -35,6 +35,14 @@ Normal portfolio cadence is Monday-Friday from 08:00 Europe/Belgrade. Saturday/S
 
 The scheduling rule controls automatic dispatch, not emergency owner-requested work.
 
+## Dry-run selector
+
+The first live Orchestrator component is `orchestrator-dry-run`, deployed as a Forge Supabase Edge Function and committed under `supabase/functions/orchestrator-dry-run/`.
+
+It can rank eligible work and explain blockers, but it cannot claim or mutate a ticket. The ranking contract is documented in `orchestrator/SELECTION-POLICY.md`.
+
+Explicit ticket dependencies are not modeled yet, so autonomous dispatch remains disabled until dependency metadata and cycle-safe blocking are implemented.
+
 ## First milestone
 
 Before autonomous dispatch is enabled, Orchestrator must prove:
