@@ -7,6 +7,7 @@ import {
   updateProjectDirection,
 } from '../services/governanceRepository'
 import type { DecisionRequest, DirectionStatus, Project, ProjectAgent } from '../types'
+import { AgentCredentials } from './AgentCredentials'
 
 interface AgentsPanelProps {
   project: Project
@@ -116,7 +117,7 @@ export function AgentsPanel({ project, isAdmin, onClose }: AgentsPanelProps) {
           <div>
             <div className="governance-kicker"><Bot size={14} /> {project.key} · Agent control</div>
             <h2>{project.name}</h2>
-            <p>Agent roster, product direction gate and owner decisions for this project.</p>
+            <p>Agent roster, product direction gate, access keys and owner decisions for this project.</p>
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Close agent panel"><X size={18} /></button>
         </header>
@@ -181,6 +182,8 @@ export function AgentsPanel({ project, isAdmin, onClose }: AgentsPanelProps) {
                 ))}
               </div>
             </section>
+
+            <AgentCredentials projectId={project.id} agents={agents} isAdmin={isAdmin} />
 
             <section className="governance-section">
               <div className="section-heading-row">
