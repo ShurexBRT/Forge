@@ -12,6 +12,10 @@ interface AuthGateProps {
   children: (state: AuthGateRenderState) => ReactNode
 }
 
+function getAuthRedirectUrl() {
+  return new URL(import.meta.env.BASE_URL, window.location.href).href
+}
+
 export function AuthGate({ children }: AuthGateProps) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
@@ -64,6 +68,9 @@ export function AuthGate({ children }: AuthGateProps) {
         const { data, error: authError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            emailRedirectTo: getAuthRedirectUrl(),
+          },
         })
         if (authError) throw authError
         if (!data.session) setMessage('Account created. Check your email to confirm the account, then sign in.')
