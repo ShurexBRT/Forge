@@ -6,7 +6,7 @@ import {
   setProjectAgentEnabled,
   updateProjectDirection,
 } from '../services/governanceRepository'
-import type { DecisionRequest, DirectionStatus, Project, ProjectAgent, ProjectDirection } from '../types'
+import type { DecisionRequest, DirectionStatus, Project, ProjectAgent } from '../types'
 
 interface AgentsPanelProps {
   project: Project
@@ -30,7 +30,6 @@ function optionLabel(option: unknown) {
 }
 
 export function AgentsPanel({ project, isAdmin, onClose }: AgentsPanelProps) {
-  const [direction, setDirection] = useState<ProjectDirection | null>(null)
   const [agents, setAgents] = useState<ProjectAgent[]>([])
   const [decisions, setDecisions] = useState<DecisionRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -46,7 +45,6 @@ export function AgentsPanel({ project, isAdmin, onClose }: AgentsPanelProps) {
     setError(null)
     try {
       const data = await fetchProjectGovernance(project.id)
-      setDirection(data.direction)
       setAgents(data.agents)
       setDecisions(data.decisions)
       if (data.direction) {
