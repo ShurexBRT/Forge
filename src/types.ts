@@ -12,6 +12,8 @@ export type Priority = 'Urgent' | 'High' | 'Medium' | 'Low'
 export type AgentRole = 'Planner' | 'Builder' | 'Reviewer' | 'QA' | 'Browser' | 'Release'
 export type StageStatus = 'pending' | 'active' | 'passed' | 'failed'
 export type ForgeMode = 'demo' | 'cloud'
+export type UserRole = 'admin' | 'member'
+export type ProjectAccessRole = 'member' | 'manager'
 
 export interface AcceptanceCriterion {
   id: string
@@ -74,4 +76,19 @@ export interface CreateProjectInput {
   name: string
   description: string
   githubRepo?: string
+}
+
+export interface UserProfile {
+  id: string
+  email: string
+  displayName?: string
+  role: UserRole
+  createdAt: string
+}
+
+export interface ProjectMembership {
+  projectId: string
+  userId: string
+  accessRole: ProjectAccessRole
+  assignedAt: string
 }
