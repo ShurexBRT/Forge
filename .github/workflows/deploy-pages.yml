@@ -28,8 +28,10 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Both values are browser-public Supabase configuration. Repository
+          # variables can override them later without changing application code.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://yljhffprkprbgjdaarqi.supabase.co' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_iZ_vk9CS_5A6GzKwBf1O9Q_B5pwRKJM' }}
         run: npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v5
