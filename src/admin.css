@@ -1,3 +1,7 @@
+.mobile-sidebar-actions {
+  display: none;
+}
+
 .admin-backdrop {
   z-index: 70;
   justify-content: flex-end;
@@ -195,6 +199,23 @@
 }
 
 @media (max-width: 760px) {
+  .mobile-sidebar-actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 5px;
+  }
+
+  .mobile-sidebar-actions button {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #2a313c;
+    border-radius: 8px;
+    background: #151a21;
+    color: #b9c4d2;
+  }
+
   .admin-backdrop {
     align-items: stretch;
     background: var(--bg);
