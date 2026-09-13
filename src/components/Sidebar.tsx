@@ -1,4 +1,4 @@
-import { Bot, Boxes, Cloud, HardDrive, LogOut, Plus, Settings2 } from 'lucide-react'
+import { Bot, Boxes, Cloud, HardDrive, LogOut, Plus, Settings2, ShieldCheck } from 'lucide-react'
 import type { ForgeMode, Project } from '../types'
 
 interface SidebarProps {
@@ -6,12 +6,24 @@ interface SidebarProps {
   activeProjectId: string
   mode: ForgeMode
   userLabel?: string
+  isAdmin?: boolean
   onProjectChange: (id: string) => void
-  onCreateProject: () => void
+  onCreateProject?: () => void
+  onOpenAdmin?: () => void
   onSignOut?: () => void
 }
 
-export function Sidebar({ projects, activeProjectId, mode, userLabel, onProjectChange, onCreateProject, onSignOut }: SidebarProps) {
+export function Sidebar({
+  projects,
+  activeProjectId,
+  mode,
+  userLabel,
+  isAdmin = false,
+  onProjectChange,
+  onCreateProject,
+  onOpenAdmin,
+  onSignOut,
+}: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -29,11 +41,18 @@ export function Sidebar({ projects, activeProjectId, mode, userLabel, onProjectC
         <button className="nav-item" type="button">
           <Bot size={16} /> Agents <span className="soon">soon</span>
         </button>
+        {isAdmin && onOpenAdmin && (
+          <button className="nav-item" type="button" onClick={onOpenAdmin}>
+            <ShieldCheck size={16} /> Admin
+          </button>
+        )}
       </nav>
 
       <div className="sidebar-section-title sidebar-section-row">
         <span>Projects</span>
-        <button type="button" onClick={onCreateProject} aria-label="Create project"><Plus size={13} /></button>
+        {isAdmin && onCreateProject && (
+          <button type="button" onClick={onCreateProject} aria-label="Create project"><Plus size={13} /></button>
+        )}
       </div>
       <div className="project-list">
         {projects.map((project) => (
@@ -52,13 +71,16 @@ export function Sidebar({ projects, activeProjectId, mode, userLabel, onProjectC
       <div className="sidebar-footer">
         <div className="connection-state">
           {mode === 'cloud' ? <Cloud size={13} /> : <HardDrive size={13} />}
-          <div><strong>{mode === 'cloud' ? 'Cloud' : 'Demo'}</strong><span>{mode === 'cloud' ? userLabel : 'Local browser data'}</span></div>
+          <div>
+            <strong>{mode === 'cloud' ? (isAdmin ? 'Cloud · admin' : 'Cloud') : 'Demo'}</strong>
+            <span>{mode === 'cloud' ? userLabel : 'Local browser data'}</span>
+          </div>
         </div>
         <button className="nav-item" type="button">
           <Settings2 size={16} /> Settings
         </button>
         {mode === 'cloud' && onSignOut && <button className="nav-item" type="button" onClick={onSignOut}><LogOut size={16} /> Sign out</button>}
-        <div className="version">Forge v0.2.0</div>
+        <div className="version">Forge v0.3.0</div>
       </div>
     </aside>
   )
