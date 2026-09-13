@@ -140,3 +140,19 @@ export interface DecisionRequest {
   resolvedAt: string | null
   updatedAt: string
 }
+
+export interface AgentCredentialSummary {
+  id: string
+  projectId: string
+  agentId: string
+  label: string
+  tokenPrefix: string
+  active: boolean
+  lastUsedAt: string | null
+  createdAt: string
+  revokedAt: string | null
+}
+
+export interface IssuedAgentCredential extends AgentCredentialSummary {
+  token: string
+}
