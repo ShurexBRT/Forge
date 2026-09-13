@@ -51,6 +51,15 @@ export type Database = {
           { foreignKeyName: "decision_requests_ticket_id_fkey"; columns: ["ticket_id"]; isOneToOne: false; referencedRelation: "tickets"; referencedColumns: ["id"] }
         ]
       }
+      notification_outbox: {
+        Row: { attempts: number; body: string; created_at: string; dedupe_key: string | null; event_type: string; id: string; last_error: string | null; payload: Json; project_id: string | null; sent_at: string | null; severity: string; status: string; ticket_id: string | null; title: string }
+        Insert: { attempts?: number; body?: string; created_at?: string; dedupe_key?: string | null; event_type: string; id?: string; last_error?: string | null; payload?: Json; project_id?: string | null; sent_at?: string | null; severity?: string; status?: string; ticket_id?: string | null; title: string }
+        Update: { attempts?: number; body?: string; created_at?: string; dedupe_key?: string | null; event_type?: string; id?: string; last_error?: string | null; payload?: Json; project_id?: string | null; sent_at?: string | null; severity?: string; status?: string; ticket_id?: string | null; title?: string }
+        Relationships: [
+          { foreignKeyName: "notification_outbox_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] },
+          { foreignKeyName: "notification_outbox_ticket_id_fkey"; columns: ["ticket_id"]; isOneToOne: false; referencedRelation: "tickets"; referencedColumns: ["id"] }
+        ]
+      }
       orchestrator_leases: {
         Row: { acquired_at: string; agent_id: string | null; agent_role: string; execution_id: string; heartbeat_at: string; id: string; lease_until: string; metadata: Json; release_reason: string | null; released_at: string | null; status: string; ticket_id: string }
         Insert: { acquired_at?: string; agent_id?: string | null; agent_role: string; execution_id?: string; heartbeat_at?: string; id?: string; lease_until: string; metadata?: Json; release_reason?: string | null; released_at?: string | null; status?: string; ticket_id: string }
