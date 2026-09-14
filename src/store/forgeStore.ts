@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { projects as seedProjects, seedTickets } from '../data/seed'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { nextTicketNumber, ticketsForProject, toggleCriterionDone } from '../lib/ticketLogic'
 import {
   addTicketComment,
   createProject as createCloudProject,
@@ -66,7 +67,7 @@ export function useForgeStore(user: User | null) {
   )
 
   const visibleTickets = useMemo(
-    () => (activeProject ? tickets.filter((ticket) => ticket.projectId === activeProject.id) : []),
+    () => (activeProject ? ticketsForProject(tickets, activeProject.id) : []),
     [tickets, activeProject],
   )
 
@@ -117,12 +118,7 @@ export function useForgeStore(user: User | null) {
       return
     }
 
-    updateDemoTicket(ticketId, (current) => ({
-      ...current,
-      criteria: current.criteria.map((item) =>
-        item.id === criterionId ? { ...item, done: !item.done } : item,
-      ),
-    }))
+    updateDemoTicket(ticketId, (current) => toggleCriterionDone(current, criterionId))
   }
 
   async function addTicket(input: Pick<Ticket, 'title' | 'description' | 'type' | 'priority'>) {
@@ -140,11 +136,7 @@ export function useForgeStore(user: User | null) {
       return
     }
 
-    const projectTickets = tickets.filter((ticket) => ticket.projectId === activeProject.id)
-    const numbers = projectTickets
-      .map((ticket) => Number(ticket.key.split('-')[1]))
-      .filter((value) => Number.isFinite(value))
-    const nextNumber = (numbers.length ? Math.max(...numbers) : 0) + 1
+    const nextNumber = nextTicketNumber(tickets, activeProject.id)
 
     const ticket: Ticket = {
       id: crypto.randomUUID(),
