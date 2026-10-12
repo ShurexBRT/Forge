@@ -98,4 +98,3 @@ export async function prepareWorker(config: Config, directory: string, signal: A
     return { branch, worktree, commit, pullRequest, report }
   }
 }
-
