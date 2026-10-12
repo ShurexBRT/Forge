@@ -1,6 +1,14 @@
 # Local preflight handoff — 2026-10-12
 
-Result: BLOCKED pending the user's local login for live authenticated verification; local preflight and login implemented.
+Result: Local preflight and login implemented; live authenticated selector preview now verified. Full dispatch/worker execution remains unimplemented.
+
+## Latest live result
+
+The user completed local login successfully. The real `orchestrator-dry-run` response was parsed and displayed by the runner: `Selected: none`. ORC-40 is excluded by its active QA runtime blocker; ORC-35 and ORC-37 depend on ORC-40; ORC-34 depends on ORC-35, ORC-37 and ORC-40; ORC-36 depends on ORC-34. This is evidence for authenticated selector suppression, not a full QA PASS for ORC-40. Gateway BLOCKED handoff, explicit unblock and lease recovery still require separate verification with role-scoped credentials.
+
+The CLI now uses a stable loopback port (6910), a 60-minute login window and sanitized actionable login errors. The temporary foreground server disappeared between turns; the successful run used a hidden background Node process. After successful preview the listener closes intentionally and the temporary session is signed out. The displayed result page remains, but refreshing it requires starting `connect` again.
+
+The pending-login notes below describe the earlier investigation and are superseded by this live result. No ticket was unblocked or advanced.
 
 Ticket context: ORC-34, read in full together with acceptance criteria, comments and existing runs. This implementation does not complete the larger dispatch ticket or claim independent review/QA.
 

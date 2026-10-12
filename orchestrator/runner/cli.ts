@@ -26,12 +26,14 @@ try {
       let preview
       if (command === 'connect') {
         const connection = await startConnect(config, createAuthenticator(config, process.env), {
+          port: 6910,
+          timeoutMs: 60 * 60_000,
           onRejected: reason => print(`Local browser request rejected: ${reason}`),
         })
         const cancel = () => connection.close()
         process.once('SIGINT', cancel)
         process.once('SIGTERM', cancel)
-        print(`Prijavi se lokalno: ${connection.url}\nStranica važi 15 minuta. Lozinku unesi samo u lokalnu formu, nikada u chat.`)
+        print(`Prijavi se lokalno: ${connection.url}\nStranica važi 60 minuta. Lozinku unesi samo u lokalnu formu, nikada u chat.`)
         preview = await connection.done
         process.removeListener('SIGINT', cancel)
         process.removeListener('SIGTERM', cancel)

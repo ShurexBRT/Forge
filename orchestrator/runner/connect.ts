@@ -41,7 +41,7 @@ function resultPage(preview: Preview) {
   return page(`<small>FORGE / PREGLED BEZ IZMENA</small><h1>Povezivanje uspešno</h1><p>Predloženi tiket: <strong>${escape(preview.selected?.ticket_key ?? 'nema dostupnog tiketa')}</strong>. Automatsko izvršavanje je isključeno.</p>${preview.evaluations.map(row => `<article><small>${row.eligible ? 'DOSTUPAN' : 'BLOKIRAN'} · ${escape(row.required_role ?? 'bez uloge')}</small><h2>${escape(row.ticket_key)} · ${escape(row.title)}</h2>${[...row.blockers, ...row.warnings].map(reason => `<p>${escape(reason)}</p>`).join('')}</article>`).join('')}<p>Sesija runnera je završena. Ovaj tab možeš zatvoriti.</p>`)
 }
 
-export async function startConnect(config: Config, authenticate: Authenticate, options: { timeoutMs?: number; onRejected?: (reason: string) => void } = {}) {
+export async function startConnect(config: Config, authenticate: Authenticate, options: { timeoutMs?: number; port?: number; onRejected?: (reason: string) => void } = {}) {
   const nonce = randomBytes(32).toString('hex')
   let origin = '', busy = false, finished = false
   let settle!: (value: Preview | null) => void
@@ -82,13 +82,14 @@ export async function startConnect(config: Config, authenticate: Authenticate, o
       if (finished) { res.destroy(); return }
       reply(res, 200, resultPage(preview))
       finish(preview)
-    } catch {
-      if (!finished && !res.destroyed) reply(res, 400, form(nonce, config, 'Prijava ili čitanje tiketa nije uspelo. Proveri Forge admin nalog i vezu, pa pokušaj ponovo.'))
+    } catch (error) {
+      const message = error instanceof PreflightError ? error.message : 'Prijava ili čitanje tiketa nije uspelo. Proveri Forge admin nalog i vezu, pa pokušaj ponovo.'
+      if (!finished && !res.destroyed) reply(res, 400, form(nonce, config, message))
     } finally { busy = false }
   })
   server.requestTimeout = 20_000
   server.headersTimeout = 10_000
-  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve) })
+  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(options.port ?? 0, '127.0.0.1', resolve) })
   const address = server.address()
   if (!address || typeof address === 'string') throw new PreflightError('Local login server could not start.')
   origin = `http://127.0.0.1:${address.port}`

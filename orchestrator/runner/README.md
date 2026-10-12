@@ -12,7 +12,7 @@ node orchestrator/runner/cli.ts doctor --json
 node orchestrator/runner/cli.ts connect
 ```
 
-`connect` prints a local `http://127.0.0.1:<port>` URL. Open it in your browser, enter your existing Forge email and password, and submit. The runner authenticates against the configured Forge Supabase project, calls only the selector, displays the preview and closes the listener. Credentials are held in memory, never written to a file or printed; the temporary session is signed out with local scope (existing browser sessions are not signed out). The form expires after 15 minutes. Ctrl+C cancels it. The Forge publishable key defaults to the same public key used by the existing deployment; custom projects must supply their own.
+`connect` prints a local `http://127.0.0.1:6910` URL. Open it in your browser, enter your existing Forge email and password, and submit. The runner authenticates against the configured Forge Supabase project, calls only the selector, displays the preview and closes the listener. Credentials are held in memory, never written to a file or printed; the temporary session is signed out with local scope (existing browser sessions are not signed out). The form expires after 60 minutes. Ctrl+C cancels it. The Forge publishable key defaults to the same public key used by the existing deployment; custom projects must supply their own.
 
 The loopback server validates Host, form Origin and a random form nonce. It rejects cross-origin submissions, enforces a 16 KiB body limit and serves script-free, non-cacheable HTML with escaped ticket text. Top-level navigation from another site is allowed. `Referrer-Policy: same-origin` preserves the form POST Origin needed for validation.
 
