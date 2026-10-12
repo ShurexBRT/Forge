@@ -2,6 +2,7 @@ import type { User } from '@supabase/supabase-js'
 import { Cloud, Hammer } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { buildAuthRedirectUrl, isPasswordRecoveryCallback, passwordRecoveryCallbackError, type AuthRedirectFlow } from '../lib/authRedirect'
 
 interface AuthGateRenderState {
   user: User | null
@@ -14,8 +15,8 @@ interface AuthGateProps {
 
 type AuthMode = 'signin' | 'signup' | 'forgot' | 'recovery'
 
-function getAuthRedirectUrl() {
-  return new URL(import.meta.env.BASE_URL, window.location.href).href
+function getAuthRedirectUrl(flow: AuthRedirectFlow = 'confirmation') {
+  return buildAuthRedirectUrl(import.meta.env.PROD, import.meta.env.BASE_URL, window.location.href, flow)
 }
 
 export function AuthGate({ children }: AuthGateProps) {
@@ -36,9 +37,30 @@ export function AuthGate({ children }: AuthGateProps) {
     }
 
     let mounted = true
-    void supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!mounted) return
       setUser(data.session?.user ?? null)
+
+      // Some browsers process a recovery link before PASSWORD_RECOVERY is emitted.
+      // The URL marker makes the reset form resilient to that event ordering.
+      if (isPasswordRecoveryCallback(window.location.search, window.location.hash)) {
+        if (data.session?.user) {
+          setMode('recovery')
+          setError(null)
+        } else {
+          setMode('forgot')
+          setError(
+            passwordRecoveryCallbackError(window.location.hash)
+            ?? sessionError?.message
+            ?? 'This recovery link has expired or is invalid. Request a new one.',
+          )
+        }
+      }
+      setLoading(false)
+    }).catch(() => {
+      if (!mounted) return
+      setMode('forgot')
+      setError('Unable to verify your recovery link. Please try again.')
       setLoading(false)
     })
 
@@ -72,7 +94,7 @@ export function AuthGate({ children }: AuthGateProps) {
       if (mode === 'forgot') {
         if (!email.trim()) return
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: getAuthRedirectUrl(),
+          redirectTo: getAuthRedirectUrl('recovery'),
         })
         if (resetError) throw resetError
         setMessage('Password reset email sent. Open the link in the email to choose a new password.')
@@ -87,10 +109,14 @@ export function AuthGate({ children }: AuthGateProps) {
         const { error: updateError } = await supabase.auth.updateUser({ password })
         if (updateError) throw updateError
 
-        setMessage('Password updated. You are signed in to Forge.')
+        // End the short-lived recovery session and ask for a normal password login.
+        const { error: signOutError } = await supabase.auth.signOut()
+        if (signOutError) throw signOutError
+        window.history.replaceState(window.history.state, '', window.location.pathname)
         setPassword('')
         setConfirmPassword('')
         setMode('signin')
+        setMessage('Password updated successfully. Sign in using your new password.')
         return
       }
 
