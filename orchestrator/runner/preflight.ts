@@ -134,7 +134,7 @@ export async function fetchPreview(config: Config, env: NodeJS.ProcessEnv, reque
 
 export function redact(value: string, env: NodeJS.ProcessEnv): string {
   let output = value
-  for (const name of ['FORGE_ACCESS_TOKEN', 'FORGE_PUBLISHABLE_KEY']) {
+  for (const name of ['FORGE_ACCESS_TOKEN', 'FORGE_PUBLISHABLE_KEY', 'FORGE_AGENT_TOKEN']) {
     const secret = env[name]?.trim()
     if (secret) output = output.split(secret).join('[redacted]')
   }

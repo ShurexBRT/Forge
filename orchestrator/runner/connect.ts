@@ -4,6 +4,8 @@ import type { ServerResponse } from 'node:http'
 import { createClient } from '@supabase/supabase-js'
 import { fetchPreview, PreflightError } from './preflight.ts'
 import type { Config, Preview } from './preflight.ts'
+import { loadCredential, saveCredential } from './credentials.ts'
+import type { AgentRole } from './credentials.ts'
 
 export const forgePublishableKey = 'sb_publishable_iZ_vk9CS_5A6GzKwBf1O9Q_B5pwRKJM'
 type Credentials = { email: string; password: string }
@@ -28,20 +30,54 @@ export function createAuthenticator(config: Config, env: NodeJS.ProcessEnv): Aut
   }
 }
 
+export function createAgentAuthorizer(config: Config, role: AgentRole): Authenticate {
+  if (config.url !== 'https://yljhffprkprbgjdaarqi.supabase.co') throw new PreflightError('Agent authorization is currently configured only for Forge.')
+  return async credentials => {
+    if (await loadCredential(config, role)) throw new PreflightError('A local credential already exists. Revoke and reconcile it before authorizing a replacement.')
+    const client = createClient(config.url, forgePublishableKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { fetch: (input, init) => fetch(input, { ...init, redirect: 'error', signal: AbortSignal.timeout(15_000) }) },
+    })
+    try {
+      const { data, error } = await client.auth.signInWithPassword(credentials)
+      if (error || !data.session) throw new PreflightError('Forge admin prijava nije uspela.')
+      const preview = await fetchPreview(config, { FORGE_ACCESS_TOKEN: data.session.access_token, FORGE_PUBLISHABLE_KEY: forgePublishableKey })
+      const projects = await client.from('projects').select('id').eq('key', config.project).single()
+      if (projects.error || !projects.data) throw new PreflightError('Forge project could not be resolved.')
+      const assignments = await client.from('project_agents').select('agent_id, enabled, agents(role, status)').eq('project_id', projects.data.id).eq('enabled', true)
+      if (assignments.error) throw new PreflightError('Agent assignments could not be read.')
+      const matches = assignments.data.filter(row => {
+        const agent = Array.isArray(row.agents) ? row.agents[0] : row.agents
+        return agent?.role === role && agent?.status === 'active'
+      })
+      if (matches.length !== 1) throw new PreflightError('Exactly one active project agent must match the requested role.')
+      const issued = await client.functions.invoke('agent-admin', { body: { action: 'issue', project_id: projects.data.id, agent_id: matches[0].agent_id, label: `local-runner-${role.toLowerCase()}` } })
+      if (issued.error || typeof issued.data?.token !== 'string' || typeof issued.data?.credential?.id !== 'string') throw new PreflightError('Agent credential issuance could not be confirmed. Check Forge keys before retrying.')
+      try { await saveCredential(config, role, issued.data.token, issued.data.credential.id) }
+      catch {
+        await client.functions.invoke('agent-admin', { body: { action: 'revoke', credential_id: issued.data.credential.id } })
+        throw new PreflightError('Encrypted local storage failed. Check the new credential in Forge before retrying.')
+      }
+      return preview
+    } finally { await client.auth.signOut({ scope: 'local' }).catch(() => undefined) }
+  }
+}
+
 function escape(value: string) {
   return value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!)
 }
 function page(content: string): string {
   return `<!doctype html><html lang="sr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Forge · Poveži runner</title><style>body{font:16px/1.6 system-ui;background:#101416;color:#e6eee9;margin:0}main{max-width:760px;margin:7vh auto;padding:32px}h1{font-size:32px;line-height:1.2}p{color:#b5c6bd}label{display:block;margin:20px 0 6px}input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #46534b;border-radius:8px;background:#1a2320;color:white;font:inherit}button{background:#b2f4ca;color:#112719;font:600 16px system-ui;padding:13px 22px;border:0;border-radius:8px;margin-top:24px;cursor:pointer}article{border-top:1px solid #46534b;padding:18px 0}small{color:#a0bcab}.error{color:#ffb0a5}code{overflow-wrap:anywhere}</style><main>${content}</main></html>`
 }
-function form(nonce: string, config: Config, error = '') {
+function form(nonce: string, config: Config, error = '', role?: AgentRole) {
+  if (role) return page(`<small>FORGE / POVEZIVANJE AGENTA</small><h1>Poveži ${escape(role)} agenta</h1><p>Odobravaš lokalnom runneru pristup ulozi <strong>${escape(role)}</strong> u projektu <strong>${escape(config.project)}</strong>: čitanje tiketa, preuzimanje posla i slanje izveštaja kroz Forge Gateway.</p><p>Biće izdat poseban agent ključ i sačuvan šifrovano za ovaj Windows nalog. Možeš ga opozvati u Forge → Agent access keys. Ovaj korak ne pokreće tiket. Lozinka se koristi samo za ovu prijavu.</p>${error ? `<p role="alert" class="error">${escape(error)}</p>` : ''}<form action="/login" method="post"><input type="hidden" name="nonce" value="${nonce}"><label for="email">Forge email</label><input id="email" name="email" type="email" autocomplete="username" required><label for="password">Lozinka</label><input id="password" name="password" type="password" autocomplete="current-password" required><button type="submit">Odobri pristup i poveži ${escape(role)} agenta</button></form>`)
   return page(`<small>FORGE / LOKALNI RUNNER</small><h1>Poveži Forge nalog</h1><p>Prijavi se da prikažemo tikete projekta <strong>${escape(config.project)}</strong>. Ovaj korak ne pokreće agente niti menja tikete.</p><p>Prijava ide ka <code>${escape(config.url)}</code>. Lozinka i tokeni se ne čuvaju na disku. Sesija važi samo za ovaj pregled.</p>${error ? `<p class="error" role="alert">${escape(error)}</p>` : ''}<form action="/login" method="post"><input type="hidden" name="nonce" value="${nonce}"><label for="email">Forge email</label><input id="email" name="email" type="email" autocomplete="username" required><label for="password">Lozinka</label><input id="password" name="password" type="password" autocomplete="current-password" required><button type="submit">Prijavi se i prikaži tikete</button></form>`)
 }
 function resultPage(preview: Preview) {
   return page(`<small>FORGE / PREGLED BEZ IZMENA</small><h1>Povezivanje uspešno</h1><p>Predloženi tiket: <strong>${escape(preview.selected?.ticket_key ?? 'nema dostupnog tiketa')}</strong>. Automatsko izvršavanje je isključeno.</p>${preview.evaluations.map(row => `<article><small>${row.eligible ? 'DOSTUPAN' : 'BLOKIRAN'} · ${escape(row.required_role ?? 'bez uloge')}</small><h2>${escape(row.ticket_key)} · ${escape(row.title)}</h2>${[...row.blockers, ...row.warnings].map(reason => `<p>${escape(reason)}</p>`).join('')}</article>`).join('')}<p>Sesija runnera je završena. Ovaj tab možeš zatvoriti.</p>`)
 }
 
-export async function startConnect(config: Config, authenticate: Authenticate, options: { timeoutMs?: number; port?: number; onRejected?: (reason: string) => void } = {}) {
+export async function startConnect(config: Config, authenticate: Authenticate, options: { timeoutMs?: number; port?: number; role?: AgentRole; onRejected?: (reason: string) => void } = {}) {
   const nonce = randomBytes(32).toString('hex')
   let origin = '', busy = false, finished = false
   let settle!: (value: Preview | null) => void
@@ -57,7 +93,7 @@ export async function startConnect(config: Config, authenticate: Authenticate, o
       options.onRejected?.('Unexpected Host header')
       reply(res, 403, page('Zahtev nije dozvoljen.')); return
     }
-    if (req.method === 'GET' && req.url === '/') { reply(res, 200, form(nonce, config)); return }
+    if (req.method === 'GET' && req.url === '/') { reply(res, 200, form(nonce, config, '', options.role)); return }
     if (req.method !== 'POST' || req.url !== '/login') { reply(res, 404, page('Stranica ne postoji.')); return }
     // Top-level GET navigation from another page is valid. Only form submissions
     // must originate from this exact loopback origin and carry our nonce.
@@ -77,14 +113,14 @@ export async function startConnect(config: Config, authenticate: Authenticate, o
       const fields = new URLSearchParams(body)
       if (fields.get('nonce') !== nonce) { reply(res, 403, page('Zahtev nije dozvoljen.')); return }
       const email = fields.get('email')?.trim(), password = fields.get('password')
-      if (!email || !password || email.length > 320 || password.length > 4096) { reply(res, 400, form(nonce, config, 'Unesi email i lozinku.')); return }
+      if (!email || !password || email.length > 320 || password.length > 4096) { reply(res, 400, form(nonce, config, 'Unesi email i lozinku.', options.role)); return }
       const preview = await authenticate({ email, password })
       if (finished) { res.destroy(); return }
-      reply(res, 200, resultPage(preview))
+      reply(res, 200, options.role ? page(`<h1>${escape(options.role)} agent je povezan</h1><p>Ključ je sačuvan šifrovano na ovom računaru. Nijedan tiket nije pokrenut. Možeš zatvoriti ovu stranicu.</p>`) : resultPage(preview))
       finish(preview)
     } catch (error) {
       const message = error instanceof PreflightError ? error.message : 'Prijava ili čitanje tiketa nije uspelo. Proveri Forge admin nalog i vezu, pa pokušaj ponovo.'
-      if (!finished && !res.destroyed) reply(res, 400, form(nonce, config, message))
+      if (!finished && !res.destroyed) reply(res, 400, form(nonce, config, message, options.role))
     } finally { busy = false }
   })
   server.requestTimeout = 20_000

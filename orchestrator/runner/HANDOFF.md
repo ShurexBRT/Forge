@@ -1,6 +1,20 @@
 # Local preflight handoff — 2026-10-12
 
-Result: Local preflight and login implemented; live authenticated selector preview now verified. Full dispatch/worker execution remains unimplemented.
+Result: Local preflight and login implemented; live authenticated selector preview verified. Manual Builder execution code is now implemented and locally tested, but a real Codex-to-PR pilot and live Agent Gateway verification remain pending.
+
+## Execution implementation update
+
+- Added Gateway client with project/role validation and no automatic mutation retries.
+- Added durable execution journal and exclusive local lock; interrupted/ambiguous attempts require reconciliation.
+- Added heartbeat cancellation and actual child-process-tree termination on Windows/POSIX.
+- Added isolated Git worktrees, Codex structured output, configured npm checks, draft PR publication and verified Builder handoff postconditions.
+- Added explicit local `authorize QA|Builder` flow through the existing `agent-admin` API. The user must approve the role access on the local form. Keys are encrypted using Windows DPAPI, stored in Git-ignored `.forge-runner/credentials`, and excluded from worker environment variables.
+- Added `.forge/runner.json` for the approved base ref/check commands/worker timeout. First adapter supports npm repositories.
+- Latest verification: 44 tests passed, runner typecheck passed, lint passed, frontend build passed. Tests cover fake Gateway/worker failure injection plus real local process cancellation and DPAPI round trips. These are developer checks, not independent QA approval.
+- Actual live worker run has not occurred. Gateway handoff still has non-atomic backend writes; runner postcondition checks detect inconsistency but do not replace the planned transactional backend work. Automatic resume and scheduled dispatch remain disabled.
+- An authorization server was started on port 6910 for the QA role. It waits for the user's explicit form submission; no role credential is created merely by starting the server. After successful authorization, inspect ORC-40 with FORGE_AGENT_ROLE=QA before deciding any next mutation.
+
+Earlier chronology below remains for context. No existing ORC blocker was bypassed and no ticket was marked passed or Done.
 
 ## Latest live result
 
