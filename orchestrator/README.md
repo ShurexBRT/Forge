@@ -41,7 +41,11 @@ The first live Orchestrator component is `orchestrator-dry-run`, deployed as a F
 
 It can rank eligible work and explain blockers, but it cannot claim or mutate a ticket. The ranking contract is documented in `orchestrator/SELECTION-POLICY.md`.
 
-Explicit ticket dependencies are not modeled yet, so autonomous dispatch remains disabled until dependency metadata and cycle-safe blocking are implemented.
+Dependency metadata, cycle detection, execution leases and runtime blockers now exist in migrations and backend source. Their presence alone does not establish end-to-end execution safety; autonomous local execution remains disabled pending runner and recovery verification.
+
+## Local preflight
+
+The first local runner slice is documented in [`runner/README.md`](runner/README.md). Run `npm run runner:doctor` from the repository root to check the repository and local Codex session. The authenticated `preview` command calls only the existing dry-run selector and never claims work.
 
 ## First milestone
 

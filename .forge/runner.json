@@ -1,0 +1,5 @@
+{
+  "baseRef": "origin/main",
+  "checks": ["lint", "test", "build"],
+  "workerTimeoutMinutes": 30
+}

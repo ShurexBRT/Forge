@@ -20,7 +20,7 @@ For projects whose Product Direction is not `defined`, non-Planner execution is 
 
 ## Current limitation
 
-Forge does not yet model explicit ticket-to-ticket dependencies. The dry-run selector therefore reports that dependency enforcement is unavailable rather than pretending to enforce it. Adding dependency metadata and cycle-safe blocking is the next gate before autonomous dispatch.
+Forge now models explicit ticket dependencies with cycle detection. The selector blocks unresolved dependencies, live leases and active runtime blockers. The local runner remains read-only while authenticated runtime behavior and recovery are verified. See `docs/ORCHESTRATOR-RUNNER-PLAN.md` for the remaining execution gates.
 
 ## Non-goal
 

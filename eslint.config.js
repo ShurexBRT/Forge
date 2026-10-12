@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules'] },
+  { ignores: ['dist', 'coverage', 'node_modules', '.forge-runner'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -31,7 +31,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['tests/**/*.ts'],
+    files: ['tests/**/*.ts', 'orchestrator/runner/**/*.ts'],
     languageOptions: {
       globals: {
         ...globals.node,
