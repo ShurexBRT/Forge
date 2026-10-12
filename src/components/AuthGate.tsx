@@ -12,6 +12,8 @@ interface AuthGateProps {
   children: (state: AuthGateRenderState) => ReactNode
 }
 
+type AuthMode = 'signin' | 'signup' | 'forgot' | 'recovery'
+
 function getAuthRedirectUrl() {
   return new URL(import.meta.env.BASE_URL, window.location.href).href
 }
@@ -19,9 +21,10 @@ function getAuthRedirectUrl() {
 export function AuthGate({ children }: AuthGateProps) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(isSupabaseConfigured)
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [mode, setMode] = useState<AuthMode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -39,7 +42,15 @@ export function AuthGate({ children }: AuthGateProps) {
       setLoading(false)
     })
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('recovery')
+        setPassword('')
+        setConfirmPassword('')
+        setError(null)
+        setMessage('Choose a new password for your Forge account.')
+      }
+
       setUser(session?.user ?? null)
       setLoading(false)
     })
@@ -51,13 +62,40 @@ export function AuthGate({ children }: AuthGateProps) {
   }, [])
 
   async function submit() {
-    if (!supabase || !email.trim() || !password) return
+    if (!supabase) return
 
     setSubmitting(true)
     setError(null)
     setMessage(null)
 
     try {
+      if (mode === 'forgot') {
+        if (!email.trim()) return
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: getAuthRedirectUrl(),
+        })
+        if (resetError) throw resetError
+        setMessage('Password reset email sent. Open the link in the email to choose a new password.')
+        return
+      }
+
+      if (mode === 'recovery') {
+        if (!password) return
+        if (password.length < 8) throw new Error('Password must be at least 8 characters.')
+        if (password !== confirmPassword) throw new Error('Passwords do not match.')
+
+        const { error: updateError } = await supabase.auth.updateUser({ password })
+        if (updateError) throw updateError
+
+        setMessage('Password updated. You are signed in to Forge.')
+        setPassword('')
+        setConfirmPassword('')
+        setMode('signin')
+        return
+      }
+
+      if (!email.trim() || !password) return
+
       if (mode === 'signin') {
         const { error: authError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -97,6 +135,35 @@ export function AuthGate({ children }: AuthGateProps) {
     )
   }
 
+  if (mode === 'recovery') {
+    return (
+      <div className="auth-shell">
+        <form
+          className="auth-card"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void submit()
+          }}
+        >
+          <div className="auth-brand"><div className="brand-mark">F</div><div><strong>Forge</strong><span>agent desk</span></div></div>
+          <div className="auth-cloud"><Cloud size={14} /> Password recovery</div>
+          <h1>Choose a new password</h1>
+          <p>Set a new password for your Forge account.</p>
+
+          <label>New password<input type="password" minLength={8} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          <label>Confirm password<input type="password" minLength={8} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></label>
+
+          {error && <div className="auth-error">{error}</div>}
+          {message && <div className="auth-message">{message}</div>}
+
+          <button className="primary-button auth-submit" type="submit" disabled={submitting}>
+            {submitting ? 'Updating…' : 'Update password'}
+          </button>
+        </form>
+      </div>
+    )
+  }
+
   if (!user) {
     return (
       <div className="auth-shell">
@@ -109,28 +176,51 @@ export function AuthGate({ children }: AuthGateProps) {
         >
           <div className="auth-brand"><div className="brand-mark">F</div><div><strong>Forge</strong><span>agent desk</span></div></div>
           <div className="auth-cloud"><Cloud size={14} /> Cloud workspace</div>
-          <h1>{mode === 'signin' ? 'Sign in to Forge' : 'Create your Forge account'}</h1>
-          <p>Your tickets and agent runs are protected by Supabase Auth and row-level security.</p>
+          <h1>{mode === 'signin' ? 'Sign in to Forge' : mode === 'signup' ? 'Create your Forge account' : 'Reset your password'}</h1>
+          <p>
+            {mode === 'forgot'
+              ? 'Enter your email and Forge will send you a recovery link.'
+              : 'Your tickets and agent runs are protected by Supabase Auth and row-level security.'}
+          </p>
 
           <label>Email<input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
-          <label>Password<input type="password" minLength={8} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          {mode !== 'forgot' && (
+            <label>Password<input type="password" minLength={8} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} value={password} onChange={(event) => setPassword(event.target.value)} required /></label>
+          )}
 
           {error && <div className="auth-error">{error}</div>}
           {message && <div className="auth-message">{message}</div>}
 
           <button className="primary-button auth-submit" type="submit" disabled={submitting}>
-            {submitting ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+            {submitting ? 'Working…' : mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}
           </button>
+
+          {mode === 'signin' && (
+            <button
+              className="auth-switch"
+              type="button"
+              onClick={() => {
+                setMode('forgot')
+                setError(null)
+                setMessage(null)
+                setPassword('')
+              }}
+            >
+              Forgot password?
+            </button>
+          )}
+
           <button
             className="auth-switch"
             type="button"
             onClick={() => {
-              setMode((current) => current === 'signin' ? 'signup' : 'signin')
+              setMode((current) => current === 'signup' ? 'signin' : current === 'signin' ? 'signup' : 'signin')
               setError(null)
               setMessage(null)
+              setPassword('')
             }}
           >
-            {mode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
+            {mode === 'signin' ? 'Need an account? Create one' : mode === 'signup' ? 'Already have an account? Sign in' : 'Back to sign in'}
           </button>
         </form>
       </div>
