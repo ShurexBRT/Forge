@@ -31,7 +31,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['tests/**/*.ts'],
+    files: ['tests/**/*.ts', 'orchestrator/runner/**/*.ts'],
     languageOptions: {
       globals: {
         ...globals.node,

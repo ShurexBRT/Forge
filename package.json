@@ -9,19 +9,24 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run"
+    "test": "vitest run",
+    "runner:doctor": "node orchestrator/runner/cli.ts doctor",
+    "runner:connect": "node orchestrator/runner/cli.ts connect",
+    "runner:preview": "node orchestrator/runner/cli.ts preview",
+    "runner:typecheck": "tsc -p orchestrator/runner/tsconfig.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
+    "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest"
+    "typescript": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@types/node": "^22.20.5",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "latest",

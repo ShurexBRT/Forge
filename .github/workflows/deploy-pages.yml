@@ -32,6 +32,8 @@ jobs:
         run: npm run lint
       - name: Test
         run: npm test
+      - name: Runner typecheck
+        run: npm run runner:typecheck
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://yljhffprkprbgjdaarqi.supabase.co' }}
